@@ -19,17 +19,19 @@ namespace DBInlämningsuppgift2
         }
         public static void DisplayMenu()
         {
+            Console.Clear();
             int userInput = 0;
             Console.WriteLine("1) Lägg till kund");
             Console.WriteLine("2) Lägg till produkt");
             Console.WriteLine("3) Uppdatera produktpris");
             Console.WriteLine("4) Avsluta");
 
+            bool endLoop = false;
             do
             {
-                try { 
+                try
+                { 
                     userInput = int.Parse(Console.ReadLine());
-
                     if (userInput == 1)
                     {
                         InsertCustomer();
@@ -42,13 +44,25 @@ namespace DBInlämningsuppgift2
                     {
                         UpdateProductPrice();
                     }
+                    else if (userInput == 4)
+                    {
+                        endLoop = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ange 1,2,3 eller 4");
+                    }
                 }
                 catch
                 {
-                    Console.WriteLine("Ange ett av de fyra alternativen");
+                    Console.WriteLine("Ange 1,2,3 eller 4");
                 }
+                
             }
-            while (userInput != 1 || userInput != 2 || userInput != 3 || userInput != 4);  
+            while (endLoop==false);
+
+            
+            
         }
         public static void InsertCustomer()
         {
@@ -108,7 +122,43 @@ namespace DBInlämningsuppgift2
         }
         public static void UpdateProductPrice()
         {
+            Console.Clear();
+            int productID;
+            decimal newUnitPrice;
+            using (SqlConnection cn=new SqlConnection(connectionString))
+            {               
+                SqlCommand cmd = cn.CreateCommand();
+                cn.Open();
+                cmd.CommandText = "SELECT TOP(1000) [ProductID]"+
+                    ",[ProductName]"+
+                    ",[UnitPrice]"+
+                    "FROM [dbo].[Products]";
+                SqlDataReader rd = cmd.ExecuteReader();  
+                while (rd.Read())
+                {
+                    Console.WriteLine("{0} {1} {2}",rd.GetInt32(0),rd.GetString(1),Math.Round(rd.GetDecimal(2),2));
+                }               
+                rd.Close();
+            }
+            Console.WriteLine("");
+            Console.Write("Ange produktid för produkten du vill ändra: ");
+            productID = int.Parse(Console.ReadLine());
+            Console.Write("Ange nytt pris för produkten: ");
+            newUnitPrice = decimal.Parse(Console.ReadLine());
 
+            using (SqlConnection cn = new SqlConnection(connectionString))
+            {
+                cn.Open();
+                using (SqlCommand cmd = new SqlCommand("UpdateProductPrice", cn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ProductID", productID);
+                    cmd.Parameters.AddWithValue("@UnitPrice", newUnitPrice);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            DisplayMenu();
         }
     }
 }
